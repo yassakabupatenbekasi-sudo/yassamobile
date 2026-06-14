@@ -1,4 +1,4 @@
-const CACHE_NAME = 'yassa-cache-v1';
+const CACHE_NAME = 'yassa-cache-v2';
 
 const STATIC_ASSETS = [
   '/yassamobile/',

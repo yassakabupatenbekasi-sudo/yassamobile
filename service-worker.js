@@ -1,9 +1,10 @@
 // ============================================================
 // SERVICE WORKER - YASSA Mobile PWA
-// Versi: 2.0.0 (Auto-Update)
+// Versi: 2.1.0 (Auto-Update)
+// URL: https://yassa-mobile.github.io/yassamobile/
 // ============================================================
 
-const CACHE_NAME = 'yassa-cache-v2';
+const CACHE_NAME = 'yassa-cache-v3';
 
 const STATIC_ASSETS = [
   '/yassamobile/',
@@ -15,20 +16,20 @@ const STATIC_ASSETS = [
 
 // ---- INSTALL: Cache semua aset statis ----
 self.addEventListener('install', event => {
-  console.log('[SW] Installing v2...');
+  console.log('[SW] Installing v3...');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(STATIC_ASSETS))
       .then(() => {
         console.log('[SW] Cache selesai, skip waiting...');
-        return self.skipWaiting(); // Langsung aktif tanpa tunggu tab ditutup
+        return self.skipWaiting();
       })
   );
 });
 
 // ---- ACTIVATE: Hapus cache lama, ambil alih semua client ----
 self.addEventListener('activate', event => {
-  console.log('[SW] Activating v2...');
+  console.log('[SW] Activating v3...');
   event.waitUntil(
     caches.keys()
       .then(keys => Promise.all(
@@ -41,7 +42,7 @@ self.addEventListener('activate', event => {
       ))
       .then(() => {
         console.log('[SW] Mengambil alih semua client...');
-        return self.clients.claim(); // Langsung kontrol semua tab/window
+        return self.clients.claim();
       })
   );
 });
@@ -61,7 +62,6 @@ self.addEventListener('fetch', event => {
     event.respondWith(
       fetch(event.request)
         .then(response => {
-          // Simpan versi terbaru ke cache
           if (response && response.status === 200) {
             const cloned = response.clone();
             caches.open(CACHE_NAME).then(cache => cache.put(event.request, cloned));
@@ -69,7 +69,6 @@ self.addEventListener('fetch', event => {
           return response;
         })
         .catch(() => {
-          // Offline → pakai cache
           return caches.match(event.request);
         })
     );
@@ -97,7 +96,7 @@ self.addEventListener('fetch', event => {
   );
 });
 
-// ---- MESSAGE: Terima perintah dari app (misal: skip waiting) ----
+// ---- MESSAGE: Terima perintah dari app ----
 self.addEventListener('message', event => {
   if (event.data === 'SKIP_WAITING') {
     self.skipWaiting();

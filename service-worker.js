@@ -1,9 +1,9 @@
 // ============================================================
 // SERVICE WORKER - YASSA Mobile PWA
-// Versi: 3.0.0 (Auto-Update - Fix Icon Bug)
+// Versi: 2.0.0 (Auto-Update)
 // ============================================================
 
-const CACHE_NAME = 'yassa-cache-v3';
+const CACHE_NAME = 'yassa-cache-v2';
 
 const STATIC_ASSETS = [
   '/yassamobile/',
@@ -15,7 +15,7 @@ const STATIC_ASSETS = [
 
 // ---- INSTALL: Cache semua aset statis ----
 self.addEventListener('install', event => {
-  console.log('[SW] Installing v3...');
+  console.log('[SW] Installing v2...');
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(cache => cache.addAll(STATIC_ASSETS))
@@ -28,7 +28,7 @@ self.addEventListener('install', event => {
 
 // ---- ACTIVATE: Hapus cache lama, ambil alih semua client ----
 self.addEventListener('activate', event => {
-  console.log('[SW] Activating v3...');
+  console.log('[SW] Activating v2...');
   event.waitUntil(
     caches.keys()
       .then(keys => Promise.all(

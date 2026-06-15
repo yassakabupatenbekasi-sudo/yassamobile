@@ -1444,7 +1444,8 @@ const submitArchiveChildren = async () => {
 
 // 🔔 Daftarkan FCM token setelah login berhasil
 if ('Notification' in window && 'serviceWorker' in navigator) {
-    initPushNotification(cleanUsername); // ← kirim username langsung
+    console.log('[FCM] cleanUsername saat dipanggil:', cleanUsername);
+    initPushNotification(cleanUsername);
 }
 
                         // 🔴 LOGIKA PAKSA GANTI PASSWORD SEMENTARA 🔴

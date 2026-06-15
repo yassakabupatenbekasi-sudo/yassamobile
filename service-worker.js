@@ -25,19 +25,23 @@ const messaging = firebase.messaging();
 
 // ---- Tampilkan notifikasi saat app di background/tertutup ----
 messaging.onBackgroundMessage((payload) => {
-  console.log('[SW-FCM] Notifikasi background:', payload);
+  try {
+    console.log('[SW-FCM] Notifikasi background:', payload);
 
-  const { title, body } = payload.notification;
+    const { title, body } = payload.notification;
 
-  self.registration.showNotification(title, {
-    body: body,
-    icon: '/yassamobile/icon-192.png',
-    badge: '/yassamobile/icon-192.png',
-    vibrate: [200, 100, 200],
-    tag: 'yassa-notif', // Supaya tidak menumpuk
-    renotify: true,
-    data: { url: '/yassamobile/' }
-  });
+    return self.registration.showNotification(title, {
+      body: body,
+      icon: '/yassamobile/icon-192.png',
+      badge: '/yassamobile/icon-192.png',
+      vibrate: [200, 100, 200],
+      tag: 'yassa-notif', // Supaya tidak menumpuk
+      renotify: true,
+      data: { url: '/yassamobile/' }
+    });
+  } catch (err) {
+    console.error('[FCM] Error menampilkan notifikasi background:', err);
+  }
 });
 
 // ---- Klik notifikasi → buka app ----

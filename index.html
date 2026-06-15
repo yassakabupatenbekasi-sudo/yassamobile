@@ -1441,9 +1441,10 @@ const submitArchiveChildren = async () => {
                         
                         setTab('home');
                         sendLog(cleanUsername, assignedRole, assignedWilayah, 'Berhasil Login');
-                            // 🔔 Daftarkan FCM token setelah login berhasil
+
+// 🔔 Daftarkan FCM token setelah login berhasil
 if ('Notification' in window && 'serviceWorker' in navigator) {
-    initPushNotification();
+    initPushNotification(cleanUsername); // ← kirim username langsung
 }
 
                         // 🔴 LOGIKA PAKSA GANTI PASSWORD SEMENTARA 🔴
@@ -5496,7 +5497,7 @@ if ('Notification' in window && 'serviceWorker' in navigator) {
   const messaging = getMessaging(app);
 
   // ---- Minta izin notifikasi & dapatkan token FCM ----
-  async function initPushNotification() {
+  async function initPushNotification(usernameParam) {
     try {
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') {
@@ -5514,7 +5515,7 @@ if ('Notification' in window && 'serviceWorker' in navigator) {
       if (token) {
         console.log('[FCM] Token berhasil:', token);
         // Subscribe ke topic "pengurus" via GAS backend
-        await subscribeToTopic(token);
+        await subscribeToTopic(currentToken, usernameParam);
       }
     } catch (err) {
       console.error('[FCM] Error init:', err);
@@ -5522,9 +5523,9 @@ if ('Notification' in window && 'serviceWorker' in navigator) {
   }
 
   // ---- Subscribe token ke topic "pengurus" ----
-  async function subscribeToTopic(token) {
+  async function subscribeToTopic(token, usernameParam) {
     try {
-      const username = localStorage.getItem('yassa-username') || 'unknown';
+      const username = usernameParam || yassaStore.get('yassa-username') || 'unknown';
       const gasUrl = "https://script.google.com/macros/s/AKfycbymw1J86iH_QQeD1Ee5X_q4mxMJX5dagD3FyZr8DfE1eCZ0oz5Aah2LnU94cBqlKchx/exec";
       const params = new URLSearchParams({
         action: 'subscribeToken',

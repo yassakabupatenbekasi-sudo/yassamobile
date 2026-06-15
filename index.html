@@ -5515,7 +5515,7 @@ if ('Notification' in window && 'serviceWorker' in navigator) {
       if (token) {
         console.log('[FCM] Token berhasil:', token);
         // Subscribe ke topic "pengurus" via GAS backend
-        await subscribeToTopic(currentToken, usernameParam);
+        await subscribeToTopic(token, usernameParam);
       }
     } catch (err) {
       console.error('[FCM] Error init:', err);

@@ -1441,6 +1441,10 @@ const submitArchiveChildren = async () => {
                         
                         setTab('home');
                         sendLog(cleanUsername, assignedRole, assignedWilayah, 'Berhasil Login');
+                            // 🔔 Daftarkan FCM token setelah login berhasil
+if ('Notification' in window && 'serviceWorker' in navigator) {
+    initPushNotification();
+}
 
                         // 🔴 LOGIKA PAKSA GANTI PASSWORD SEMENTARA 🔴
                         // Jika pengurus masuk menggunakan sandi reset default dari Admin
@@ -5520,24 +5524,22 @@ const submitArchiveChildren = async () => {
   // ---- Subscribe token ke topic "pengurus" ----
   async function subscribeToTopic(token) {
     try {
+      const username = localStorage.getItem('yassa-username') || 'unknown';
       const gasUrl = "https://script.google.com/macros/s/AKfycbymw1J86iH_QQeD1Ee5X_q4mxMJX5dagD3FyZr8DfE1eCZ0oz5Aah2LnU94cBqlKchx/exec";
-      
-      // Pakai URL parameter — ikut redirect GAS
       const params = new URLSearchParams({
         action: 'subscribeToken',
-        token: token
+        token: token,
+        username: username
       });
-      
       await fetch(gasUrl + '?' + params.toString(), {
         method: 'GET',
         mode: 'no-cors'
       });
-      
-      console.log('[FCM] Token dikirim ke GAS via GET');
+      console.log('[FCM] Token dikirim ke GAS, username:', username);
     } catch (e) {
       console.error('[FCM] Gagal subscribe topic:', e);
     }
-  }
+}
 
   // ---- Tampilkan notifikasi saat app sedang terbuka (foreground) ----
   onMessage(messaging, (payload) => {

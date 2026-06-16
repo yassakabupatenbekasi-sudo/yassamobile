@@ -1457,7 +1457,8 @@ const submitArchiveChildren = async () => {
 
                         // 🔴 LOGIKA PAKSA GANTI PASSWORD SEMENTARA 🔴
                         // Jika pengurus masuk menggunakan sandi reset default dari Admin
-                        if (password === 'yassa1234') {
+                        // Diperbarui: Kebal huruf besar/kecil (dari keyboard HP) & spasi
+                        if (password.toString().trim().toLowerCase() === 'yassa1234') {
                             setPwdModalOpen('force'); // Kunci modal tanpa tombol X
                             yassaStore.set('yassa-force-pwd', 'true');
                         }

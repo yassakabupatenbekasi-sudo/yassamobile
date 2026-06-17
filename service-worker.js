@@ -63,7 +63,7 @@ self.addEventListener('notificationclick', (event) => {
       })
   );
 });
-const CACHE_NAME = 'yassa-cache-v3';
+const CACHE_NAME = 'yassa-cache-v4';
 
 const STATIC_ASSETS = [
   '/yassamobile/',

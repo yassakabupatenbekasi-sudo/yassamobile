@@ -332,25 +332,18 @@ const normId = (id) => String(id || "").toUpperCase().replace(/[^A-Z0-9]/g, "").
         // 🔒 FUNGSI INTI: SEMUA API CALL PAKAI POST (Token tidak di URL)
         // ============================================================
         const postApi = async (params) => {
-    try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 detik timeout
-        
-        const res = await fetch(URL_DATABASE_PERMANEN, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify(params),
-            signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-        return await res.json();
-    } catch (error) {
-        if (error.name === 'AbortError') {
-            return { success: false, error: "Timeout - Server GAS tidak merespons dalam 20 detik." };
-        }
-        return { success: false, error: "Koneksi terblokir atau jaringan terputus." };
-    }
-};
+            try {
+                const res = await fetch(URL_DATABASE_PERMANEN, {
+                    method: 'POST',
+                    // PERBAIKAN: Gunakan text/plain untuk mencegah pemblokiran CORS dari Google
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify(params)
+                });
+                return await res.json();
+            } catch (error) {
+                return { success: false, error: "Koneksi terblokir oleh Google atau jaringan terputus." };
+            }
+        };
 
         // KOMPONEN MULTI SELECT (Untuk filter bisa lebih dari 1) (Gaya Neumorphism)
             const MultiSelectFilter = ({ label, options, selectedVals, onChange, theme = 'slate' }) => {
@@ -581,32 +574,26 @@ const normId = (id) => String(id || "").toUpperCase().replace(/[^A-Z0-9]/g, "").
 
 // FUNGSI REFRESH (Diperbarui agar membaca sheet Arsip_Anak)
 const refresh = useCallback(async () => {
-    if (!role || URL_DATABASE_PERMANEN.includes("MASUKKAN_LINK")) return;
-    setLoading("MENGAMBIL DATA...");
-    try {
-        const tkn = yassaStore.get('yassa-token') || '';
-        const [resK, resA, resP, resInfo, resArsip] = await Promise.all([
-            postApi({ action: 'read', sheet: 'Keluarga', token: tkn }),
-            postApi({ action: 'read', sheet: 'Anak', token: tkn }),
-            postApi({ action: 'read', sheet: 'PENGURUS YASSA', token: tkn }).catch(() => ({success: true, data: []})),
-            postApi({ action: 'read', sheet: 'Pengumuman', token: tkn }).catch(() => ({success: true, data: []})),
-            postApi({ action: 'read', sheet: 'Arsip_Anak', token: tkn }).catch(() => ({success: true, data: []}))
-        ]);
-        
-        if (resK.success && resA.success) {
-            setData({ keluarga: resK.data, anak: resA.data, pengurus: resP.data || [], pengumuman: resInfo?.data || [], arsipAnak: resArsip?.data || [] });
-        } else {
-            // ← TAMBAHKAN INI: tampilkan error kalau gagal
-            setMsg("⚠️ Gagal mengambil data. Cek koneksi atau coba refresh.");
-            setTimeout(() => setMsg(""), 5000);
-        }
-    } catch (e) { 
-        setMsg("⚠️ Koneksi Gagal. Pastikan URL Web App benar."); 
-        setTimeout(() => setMsg(""), 5000);
-    } finally {
-        setLoading(false); // ← PINDAHKAN KE FINALLY agar selalu jalan
-    }
-}, [role]);
+                if (!role || URL_DATABASE_PERMANEN.includes("MASUKKAN_LINK")) return;
+                setLoading("MENGAMBIL DATA...");
+                try {
+                    const tkn = yassaStore.get('yassa-token') || '';
+                    const [resK, resA, resP, resInfo, resArsip] = await Promise.all([
+                        postApi({ action: 'read', sheet: 'Keluarga', token: tkn }),
+                        postApi({ action: 'read', sheet: 'Anak', token: tkn }),
+                        postApi({ action: 'read', sheet: 'PENGURUS YASSA', token: tkn }).catch(() => ({success: true, data: []})),
+                        postApi({ action: 'read', sheet: 'Pengumuman', token: tkn }).catch(() => ({success: true, data: []})),
+                        postApi({ action: 'read', sheet: 'Arsip_Anak', token: tkn }).catch(() => ({success: true, data: []}))
+                    ]);
+                    
+                    if (resK.success && resA.success) {
+                        setData({ keluarga: resK.data, anak: resA.data, pengurus: resP.data || [], pengumuman: resInfo?.data || [], arsipAnak: resArsip?.data || [] });
+                    }
+                } catch (e) { 
+                    setMsg("⚠️ Koneksi Gagal. Pastikan URL Web App benar."); 
+                }
+                setLoading(false);
+            }, [role]);
 // =================================================================
 // 🆕 FUNGSI KALKULASI DATA MASUK & KELUAR (SUPER STRICT FILTER)
 // =================================================================
@@ -1462,23 +1449,18 @@ const submitArchiveChildren = async () => {
                         setTab('home');
                         sendLog(cleanUsername, assignedRole, assignedWilayah, 'Berhasil Login');
 
+                        // 🔔 Daftarkan FCM token setelah login berhasil
+                        if ('Notification' in window && 'serviceWorker' in navigator) {
+                            // FCM dipanggil setelah login
+                            initPushNotification(cleanUsername);
+                        }
+
                         // 🔴 LOGIKA PAKSA GANTI PASSWORD SEMENTARA 🔴
-                        // PINDAH KE ATAS: Agar diproses duluan dan kebal huruf besar/spasi HP
+                        // Jika pengurus masuk menggunakan sandi reset default dari Admin
+                        // Diperbarui: Kebal huruf besar/kecil (dari keyboard HP) & spasi
                         if (password.toString().trim().toLowerCase() === 'yassa1234') {
                             setPwdModalOpen('force'); // Kunci modal tanpa tombol X
                             yassaStore.set('yassa-force-pwd', 'true');
-                        }
-
-                        // 🔔 Daftarkan FCM token setelah login berhasil
-                        try {
-                            if ('Notification' in window && 'serviceWorker' in navigator) {
-                                // Dibungkus pelindung agar error notifikasi di HP tidak memacetkan sistem
-                                if (typeof initPushNotification === 'function') {
-                                    initPushNotification(cleanUsername);
-                                }
-                            }
-                        } catch (e) {
-                            console.log('FCM Error diabaikan:', e);
                         }
 
                     } else { 
@@ -1491,6 +1473,7 @@ const submitArchiveChildren = async () => {
                 }
                 setLoading(false);
             };
+
             const handleUploadImage = async (e, childIdx) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -5506,11 +5489,10 @@ const submitArchiveChildren = async () => {
 <!-- Tambahkan kode ini SEBELUM tag </body> di index.html        -->
 <!-- Letakkan SETELAH script service worker yang sudah ada       -->
 <!-- ============================================================ -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js";
 
-<script>
-  // Pakai firebase.initializeApp() bukan import
   const firebaseConfig = {
     apiKey: "AIzaSyAKMECZeKWpbYz5fB_1dWNAaa5uiqoUwIU",
     authDomain: "yassamobile-1e4d2998.firebaseapp.com",
@@ -5520,21 +5502,28 @@ const submitArchiveChildren = async () => {
     appId: "1:1071864272227:web:78b1354aa825b713d36f56"
   };
 
-  firebase.initializeApp(firebaseConfig);
-  const messaging = firebase.messaging();
+  const app = initializeApp(firebaseConfig);
+  const messaging = getMessaging(app);
 
+  // ---- Minta izin notifikasi & dapatkan token FCM ----
   async function initPushNotification(usernameParam) {
     try {
       const permission = await Notification.requestPermission();
-      if (permission !== 'granted') return;
+      if (permission !== 'granted') {
+        console.log('[FCM] Izin notifikasi ditolak.');
+        return;
+      }
 
-      const token = await messaging.getToken({
+      // Dapatkan VAPID key dari Firebase Console:
+      // Project Settings → Cloud Messaging → Web Push certificates → Key pair
+      const token = await getToken(messaging, {
         vapidKey: (typeof YASSA_CONFIG !== 'undefined' ? YASSA_CONFIG.FCM_VAPID : 'BHIK0YI29D_A7VoUrVQ7kSbCe7BpGbYIvvZn0KX50a2CXWAfNubkRQlhKK3jDMOsKFYUL7mHKoQDh2XtsanW6KA'),
         serviceWorkerRegistration: await navigator.serviceWorker.ready
       });
 
       if (token) {
         console.log('[FCM] Token berhasil didapat ✅');
+        // Subscribe ke topic "pengurus" via GAS backend
         await subscribeToTopic(token, usernameParam);
       }
     } catch (err) {
@@ -5542,40 +5531,57 @@ const submitArchiveChildren = async () => {
     }
   }
 
+  // ---- Subscribe token ke topic "pengurus" ----
   async function subscribeToTopic(token, usernameParam) {
     try {
+      // Ambil username dari berbagai sumber (fallback berlapis)
       const username = usernameParam 
         || (typeof yassaStore !== 'undefined' ? yassaStore.get('yassa-username') : null)
         || localStorage.getItem('yassa-username') 
         || 'unknown';
 
-      const gasUrl = typeof YASSA_CONFIG !== "undefined" ? YASSA_CONFIG.GAS_URL : "";
+      const gasUrl = typeof YASSA_CONFIG !== "undefined" ? YASSA_CONFIG.GAS_URL : "https://script.google.com/macros/s/AKfycbymw1J86iH_QQeD1Ee5X_q4mxMJX5dagD3FyZr8DfE1eCZ0oz5Aah2LnU94cBqlKchx/exec";
+      
       const params = new URLSearchParams({
-        action: 'subscribeToken', token, username, ts: Date.now()
+        action  : 'subscribeToken',
+        token   : token,
+        username: username,
+        ts      : Date.now()
       });
 
-      await fetch(gasUrl + '?' + params.toString(), { method: 'GET', mode: 'no-cors' });
+      await fetch(gasUrl + '?' + params.toString(), {
+        method: 'GET',
+        mode  : 'no-cors'
+      });
       console.log('[FCM] Token dikirim ke GAS ✅');
     } catch (e) {
       console.error('[FCM] Gagal subscribe topic:', e);
     }
-  }
+}
 
-  messaging.onMessage((payload) => {
+  // ---- Tampilkan notifikasi saat app sedang terbuka (foreground) ----
+  onMessage(messaging, (payload) => {
     try {
+      console.log('[FCM] Pesan masuk (foreground):', payload);
       const { title, body } = payload.notification;
-      if (Notification.permission === 'granted' && 'serviceWorker' in navigator) {
-        navigator.serviceWorker.ready.then(reg => {
-          reg.showNotification(title, {
-            body,
-            icon: '/yassamobile/icon-192.png',
-            badge: '/yassamobile/icon-192.png',
-            vibrate: [200, 100, 200]
+
+      // Tampilkan sebagai notifikasi mobile-friendly melalui Service Worker
+      if (Notification.permission === 'granted') {
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.ready.then((registration) => {
+            registration.showNotification(title, {
+              body: body,
+              icon: '/yassamobile/icon-192.png',
+              badge: '/yassamobile/icon-192.png',
+              vibrate: [200, 100, 200]
+            });
+          }).catch((swErr) => {
+             console.error('[FCM] Service Worker gagal merender notifikasi:', swErr);
           });
-        });
+        }
       }
     } catch (error) {
-      console.error('[FCM] Error foreground:', error);
+      console.error('[FCM] Error saat memproses pesan foreground:', error);
     }
   });
 </script>

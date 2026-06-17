@@ -1450,7 +1450,7 @@ const submitArchiveChildren = async () => {
                         sendLog(cleanUsername, assignedRole, assignedWilayah, 'Berhasil Login');
 
                         // 🔴 LOGIKA PAKSA GANTI PASSWORD SEMENTARA 🔴
-                        // PINDAH KE ATAS: Agar diproses duluan sebelum kode notifikasi
+                        // PINDAH KE ATAS: Agar diproses duluan dan kebal huruf besar/spasi HP
                         if (password.toString().trim().toLowerCase() === 'yassa1234') {
                             setPwdModalOpen('force'); // Kunci modal tanpa tombol X
                             yassaStore.set('yassa-force-pwd', 'true');
@@ -1459,7 +1459,7 @@ const submitArchiveChildren = async () => {
                         // 🔔 Daftarkan FCM token setelah login berhasil
                         try {
                             if ('Notification' in window && 'serviceWorker' in navigator) {
-                                // Dibungkus pelindung agar error notifikasi tidak menggagalkan popup ganti password
+                                // Dibungkus pelindung agar error notifikasi di HP tidak memacetkan sistem
                                 if (typeof initPushNotification === 'function') {
                                     initPushNotification(cleanUsername);
                                 }
@@ -1478,7 +1478,6 @@ const submitArchiveChildren = async () => {
                 }
                 setLoading(false);
             };
-
             const handleUploadImage = async (e, childIdx) => {
                 const file = e.target.files[0];
                 if (!file) return;

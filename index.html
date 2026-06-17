@@ -332,18 +332,25 @@ const normId = (id) => String(id || "").toUpperCase().replace(/[^A-Z0-9]/g, "").
         // 🔒 FUNGSI INTI: SEMUA API CALL PAKAI POST (Token tidak di URL)
         // ============================================================
         const postApi = async (params) => {
-            try {
-                const res = await fetch(URL_DATABASE_PERMANEN, {
-                    method: 'POST',
-                    // PERBAIKAN: Gunakan text/plain untuk mencegah pemblokiran CORS dari Google
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify(params)
-                });
-                return await res.json();
-            } catch (error) {
-                return { success: false, error: "Koneksi terblokir oleh Google atau jaringan terputus." };
-            }
-        };
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 detik timeout
+        
+        const res = await fetch(URL_DATABASE_PERMANEN, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(params),
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        return await res.json();
+    } catch (error) {
+        if (error.name === 'AbortError') {
+            return { success: false, error: "Timeout - Server GAS tidak merespons dalam 20 detik." };
+        }
+        return { success: false, error: "Koneksi terblokir atau jaringan terputus." };
+    }
+};
 
         // KOMPONEN MULTI SELECT (Untuk filter bisa lebih dari 1) (Gaya Neumorphism)
             const MultiSelectFilter = ({ label, options, selectedVals, onChange, theme = 'slate' }) => {

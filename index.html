@@ -1449,18 +1449,23 @@ const submitArchiveChildren = async () => {
                         setTab('home');
                         sendLog(cleanUsername, assignedRole, assignedWilayah, 'Berhasil Login');
 
-                        // 🔔 Daftarkan FCM token setelah login berhasil
-                        if ('Notification' in window && 'serviceWorker' in navigator) {
-                            // FCM dipanggil setelah login
-                            initPushNotification(cleanUsername);
-                        }
-
                         // 🔴 LOGIKA PAKSA GANTI PASSWORD SEMENTARA 🔴
-                        // Jika pengurus masuk menggunakan sandi reset default dari Admin
-                        // Diperbarui: Kebal huruf besar/kecil (dari keyboard HP) & spasi
+                        // PINDAH KE ATAS: Agar diproses duluan dan kebal huruf besar/spasi HP
                         if (password.toString().trim().toLowerCase() === 'yassa1234') {
                             setPwdModalOpen('force'); // Kunci modal tanpa tombol X
                             yassaStore.set('yassa-force-pwd', 'true');
+                        }
+
+                        // 🔔 Daftarkan FCM token setelah login berhasil
+                        try {
+                            if ('Notification' in window && 'serviceWorker' in navigator) {
+                                // Dibungkus pelindung agar error notifikasi di HP tidak memacetkan sistem
+                                if (typeof initPushNotification === 'function') {
+                                    initPushNotification(cleanUsername);
+                                }
+                            }
+                        } catch (e) {
+                            console.log('FCM Error diabaikan:', e);
                         }
 
                     } else { 
@@ -1473,7 +1478,6 @@ const submitArchiveChildren = async () => {
                 }
                 setLoading(false);
             };
-
             const handleUploadImage = async (e, childIdx) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -5489,10 +5493,9 @@ const submitArchiveChildren = async () => {
 <!-- Tambahkan kode ini SEBELUM tag </body> di index.html        -->
 <!-- Letakkan SETELAH script service worker yang sudah ada       -->
 <!-- ============================================================ -->
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging.js";
-
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
+<script>
   const firebaseConfig = {
     apiKey: "AIzaSyAKMECZeKWpbYz5fB_1dWNAaa5uiqoUwIU",
     authDomain: "yassamobile-1e4d2998.firebaseapp.com",
@@ -5501,29 +5504,19 @@ const submitArchiveChildren = async () => {
     messagingSenderId: "1071864272227",
     appId: "1:1071864272227:web:78b1354aa825b713d36f56"
   };
+  firebase.initializeApp(firebaseConfig);
+  const messaging = firebase.messaging();
 
-  const app = initializeApp(firebaseConfig);
-  const messaging = getMessaging(app);
-
-  // ---- Minta izin notifikasi & dapatkan token FCM ----
   async function initPushNotification(usernameParam) {
     try {
       const permission = await Notification.requestPermission();
-      if (permission !== 'granted') {
-        console.log('[FCM] Izin notifikasi ditolak.');
-        return;
-      }
-
-      // Dapatkan VAPID key dari Firebase Console:
-      // Project Settings → Cloud Messaging → Web Push certificates → Key pair
-      const token = await getToken(messaging, {
+      if (permission !== 'granted') return;
+      const token = await messaging.getToken({
         vapidKey: (typeof YASSA_CONFIG !== 'undefined' ? YASSA_CONFIG.FCM_VAPID : 'BHIK0YI29D_A7VoUrVQ7kSbCe7BpGbYIvvZn0KX50a2CXWAfNubkRQlhKK3jDMOsKFYUL7mHKoQDh2XtsanW6KA'),
         serviceWorkerRegistration: await navigator.serviceWorker.ready
       });
-
       if (token) {
         console.log('[FCM] Token berhasil didapat ✅');
-        // Subscribe ke topic "pengurus" via GAS backend
         await subscribeToTopic(token, usernameParam);
       }
     } catch (err) {
@@ -5531,57 +5524,36 @@ const submitArchiveChildren = async () => {
     }
   }
 
-  // ---- Subscribe token ke topic "pengurus" ----
   async function subscribeToTopic(token, usernameParam) {
     try {
-      // Ambil username dari berbagai sumber (fallback berlapis)
-      const username = usernameParam 
+      const username = usernameParam
         || (typeof yassaStore !== 'undefined' ? yassaStore.get('yassa-username') : null)
-        || localStorage.getItem('yassa-username') 
+        || localStorage.getItem('yassa-username')
         || 'unknown';
-
-      const gasUrl = typeof YASSA_CONFIG !== "undefined" ? YASSA_CONFIG.GAS_URL : "https://script.google.com/macros/s/AKfycbymw1J86iH_QQeD1Ee5X_q4mxMJX5dagD3FyZr8DfE1eCZ0oz5Aah2LnU94cBqlKchx/exec";
-      
-      const params = new URLSearchParams({
-        action  : 'subscribeToken',
-        token   : token,
-        username: username,
-        ts      : Date.now()
-      });
-
-      await fetch(gasUrl + '?' + params.toString(), {
-        method: 'GET',
-        mode  : 'no-cors'
-      });
+      const gasUrl = typeof YASSA_CONFIG !== 'undefined' ? YASSA_CONFIG.GAS_URL : '';
+      const params = new URLSearchParams({ action: 'subscribeToken', token, username, ts: Date.now() });
+      await fetch(gasUrl + '?' + params.toString(), { method: 'GET', mode: 'no-cors' });
       console.log('[FCM] Token dikirim ke GAS ✅');
     } catch (e) {
-      console.error('[FCM] Gagal subscribe topic:', e);
+      console.error('[FCM] Gagal subscribe:', e);
     }
-}
+  }
 
-  // ---- Tampilkan notifikasi saat app sedang terbuka (foreground) ----
-  onMessage(messaging, (payload) => {
+  messaging.onMessage((payload) => {
     try {
-      console.log('[FCM] Pesan masuk (foreground):', payload);
       const { title, body } = payload.notification;
-
-      // Tampilkan sebagai notifikasi mobile-friendly melalui Service Worker
-      if (Notification.permission === 'granted') {
-        if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.ready.then((registration) => {
-            registration.showNotification(title, {
-              body: body,
-              icon: '/yassamobile/icon-192.png',
-              badge: '/yassamobile/icon-192.png',
-              vibrate: [200, 100, 200]
-            });
-          }).catch((swErr) => {
-             console.error('[FCM] Service Worker gagal merender notifikasi:', swErr);
+      if (Notification.permission === 'granted' && 'serviceWorker' in navigator) {
+        navigator.serviceWorker.ready.then(reg => {
+          reg.showNotification(title, {
+            body,
+            icon: '/yassamobile/icon-192.png',
+            badge: '/yassamobile/icon-192.png',
+            vibrate: [200, 100, 200]
           });
-        }
+        });
       }
     } catch (error) {
-      console.error('[FCM] Error saat memproses pesan foreground:', error);
+      console.error('[FCM] Error foreground:', error);
     }
   });
 </script>

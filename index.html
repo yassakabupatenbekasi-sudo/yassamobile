@@ -1078,7 +1078,7 @@ const submitArchiveChildren = async () => {
                         return str.includes(',') || str.includes('"') || str.includes('\n') ? `"${str}"` : str;
                     };
 
-                    // Membersihkan tanda baca dari input bulan dan nama almarhum agar diterima Midtrans
+                    // Modifikasi: Bersihkan tanda baca khusus aturan ketat Midtrans
                     const printBulan = printMonthInput ? printMonthInput.replace(/[^a-zA-Z0-9 ]/g, ' ') : '';
                     let bersihNamaAlm = namaAlm.toUpperCase().replace(/[^a-zA-Z0-9 ]/g, ' ');
                     const remarkText = `${bersihNamaAlm} ${transferAmount > 0 ? transferAmount : ''} SANTUNAN ${printBulan}`.trim().replace(/\s+/g, ' ');
@@ -1086,7 +1086,7 @@ const submitArchiveChildren = async () => {
                     csvRows.push([
                         bankCode,
                         rekening.replace(/[^0-9]/g, ''), 
-                        escapeCSV(namaAlm.toUpperCase()), 
+                        escapeCSV(bersihNamaAlm), 
                         escapeCSV(emailKorwil.toLowerCase()), 
                         transferAmount > 0 ? transferAmount : '',
                         escapeCSV(remarkText)
@@ -2147,19 +2147,17 @@ const submitArchiveChildren = async () => {
                                                 const emailKorwil = getVal(item, 'EMAIL KORWIL') || '';
                                                 const wilayah = getVal(item, 'WILAYAH') || '';
                                                 const escCSV = (v) => { const s = String(v||'').replace(/"/g,'""'); return s.includes(',') || s.includes('"') ? `"${s}"` : s; };
-                                                // Membersihkan tanda baca dari input bulan dan nama almarhum agar diterima Midtrans
-                                                const printBulan = printMonthInput ? printMonthInput.replace(/[^a-zA-Z0-9 ]/g, ' ') : '';
-                                                let bersihNamaAlm = namaAlm.toUpperCase().replace(/[^a-zA-Z0-9 ]/g, ' ');
-                                                let remarkText = `${bersihNamaAlm} ${transferAmount||''} SANTUNAN ${printBulan}`.trim().replace(/\s+/g, ' ');
+                                                const printBulan = printMonthInput ? printMonthInput : '';
 
                                                 csvRows.push([
                                                     bankCode, 
                                                     rekening.replace(/[^0-9]/g,''), 
-                                                    escCSV(bersihNamaAlm), // Beneficiary Name pakai Nama Alm
+                                                    escCSV(namaAlm.toUpperCase()), // Beneficiary Name pakai Nama Alm
                                                     escCSV(emailKorwil.toLowerCase()), // Beneficiary Email pakai Email Korwil
                                                     transferAmount||'', 
-                                                    escCSV(remarkText)
+                                                    escCSV(`${namaAlm.toUpperCase()} ${transferAmount||''} SANTUNAN ${printBulan}`.trim())
                                                 ].join(','));
+                                            });
 
                                             const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
                                             const url = URL.createObjectURL(blob);

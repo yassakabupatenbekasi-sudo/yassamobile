@@ -5057,13 +5057,45 @@ const submitArchiveChildren = async () => {
                                     )}
 
                                     {regModal.step === 1 && (
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
-                                            {typeof KELUARGA_FIELDS !== 'undefined' && KELUARGA_FIELDS.map(f => {
-                                                // Sembunyikan field PENANDAAN KERTAS / WARNA KERTAS di Input Data Baru
-                                                if (f.key.toUpperCase() === 'WARNA KERTAS' || f.key.toUpperCase() === 'PENANDAAN KERTAS') return null;
+<div className="space-y-5">
+    {/* TAB KHUSUS DATA KELUARGA (PROFIL, REKENING, LAINNYA) */}
+    <div className="flex bg-[#E0E5EC] p-1.5 rounded-[1.5rem] shadow-[inset_4px_4px_8px_rgb(163,177,198,0.6),inset_-4px_-4px_8px_rgba(255,255,255,0.8)] overflow-x-auto no-scrollbar border-none">
+        <button 
+            onClick={() => setRegModal({...regModal, familyTab: 'profil'})} 
+            className={`flex-1 py-3 px-4 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 outline-none ${(!regModal.familyTab || regModal.familyTab === 'profil') ? 'bg-white text-emerald-600 shadow-[4px_4px_8px_rgb(163,177,198,0.6),-4px_-4px_8px_rgba(255,255,255,0.8)]' : 'text-slate-400 hover:text-slate-600'}`}>
+            👤 Profil Keluarga
+        </button>
+        <button 
+            onClick={() => setRegModal({...regModal, familyTab: 'rekening'})} 
+            className={`flex-1 py-3 px-4 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 outline-none ${regModal.familyTab === 'rekening' ? 'bg-white text-blue-600 shadow-[4px_4px_8px_rgb(163,177,198,0.6),-4px_-4px_8px_rgba(255,255,255,0.8)]' : 'text-slate-400 hover:text-slate-600'}`}>
+            💳 Data Rekening
+        </button>
+        <button 
+            onClick={() => setRegModal({...regModal, familyTab: 'lainnya'})} 
+            className={`flex-1 py-3 px-4 rounded-xl text-[10px] sm:text-xs font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 outline-none ${regModal.familyTab === 'lainnya' ? 'bg-white text-amber-600 shadow-[4px_4px_8px_rgb(163,177,198,0.6),-4px_-4px_8px_rgba(255,255,255,0.8)]' : 'text-slate-400 hover:text-slate-600'}`}>
+            📋 Info Lainnya
+        </button>
+    </div>
 
-                                                return (
-                                                <div key={f.key} className={f.type === 'textarea' ? "sm:col-span-2" : ""}>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 bg-slate-50 border border-slate-200 p-4 sm:p-6 rounded-[2rem] shadow-sm">
+{typeof KELUARGA_FIELDS !== 'undefined' && KELUARGA_FIELDS.map(f => {
+    const fKey = f.key.toUpperCase();
+    
+    // Logika Pengelompokan Field ke dalam Tab
+    const tabAktif = regModal.familyTab || 'profil';
+    const isRekening = ['REKENING', 'BANK', 'PEMILIK', 'KETERANGAN PEMILIK'].includes(fKey);
+    const isLainnya = ['WARNA KERTAS', 'PENANDAAN KERTAS', 'STATUS AKUN', 'SURAT RESIGN GOJEK', 'BPJS', 'TGL KIRIM DATA', 'EMAIL KORWIL'].includes(fKey);
+    
+    // Tampilkan hanya field yang sesuai dengan tab yang sedang aktif
+    if (tabAktif === 'profil' && (isRekening || isLainnya)) return null;
+    if (tabAktif === 'rekening' && !isRekening) return null;
+    if (tabAktif === 'lainnya' && !isLainnya) return null;
+
+    // Sembunyikan field PENANDAAN KERTAS / WARNA KERTAS di Input Data Baru
+    if (f.key.toUpperCase() === 'WARNA KERTAS' || f.key.toUpperCase() === 'PENANDAAN KERTAS') return null;
+
+return (
+<div key={f.key} className={f.type === 'textarea' ? "sm:col-span-2" : ""}>
                                                     <label className="text-[10px] font-black text-slate-500 uppercase ml-1 tracking-widest mb-1.5 block">{f.label}</label>
                                                     {f.key === 'BANK' ? (
                                                         <SearchableBankSelect 
@@ -5143,15 +5175,15 @@ const submitArchiveChildren = async () => {
                                                             disabled={regModal.mode === 'view'}
                                                             placeholder={`Masukkan ${f.label.toLowerCase()}`}
                                                             className="w-full bg-slate-50 border border-slate-200 px-4 py-3.5 rounded-xl text-xs font-bold text-slate-700 outline-none focus:bg-white focus:border-green-400 focus:ring-2 focus:ring-green-50 shadow-sm transition-all disabled:opacity-50"
-                                                        />
-                                                    )}
-                                                </div>
-                                                );
-                                            })}
-                                        </div>
-                                    )}
-
-                                   {/* BLOK STEP 2: ANAK */}
+/>
+)}
+</div>
+);
+})}
+</div>
+</div>
+)}
+{/* BLOK STEP 2: ANAK */}
                                    {regModal.step === 2 && (
                                         <div className="space-y-6">
                                             {regChildren.map((child, i) => (

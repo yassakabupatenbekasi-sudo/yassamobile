@@ -828,7 +828,7 @@ const submitArchiveChildren = async () => {
             const [blkMsg, setBlkMsg] = useState('');
             const [blkLoading, setBlkLoading] = useState(false);
             const [secNewCount, setSecNewCount] = useState(0); // badge notif Perisai
-            const [secLastCount, setSecLastCount] = useState(0); // jumlah log terakhir diketahui
+            const secLastCountRef = React.useRef(null); // null = baseline belum pernah di-set
             // Auto-load + Auto-refresh Perisai tiap 30 detik + badge notifikasi
             React.useEffect(() => {
                 if (role !== 'admin') return;
@@ -840,27 +840,34 @@ const submitArchiveChildren = async () => {
                             if (r.success) {
                                 const newData = r.data || [];
                                 setSecurityLog(newData);
-                                // Hitung badge: selisih log baru vs terakhir diketahui
-                                if (isBackground) {
-                                    setSecNewCount(prev => {
-                                        const diff = newData.length - secLastCount;
-                                        return diff > 0 ? prev + diff : prev;
-                                    });
+
+                                if (secLastCountRef.current === null) {
+                                    // Baseline pertama kali dimuat -> JANGAN dihitung sebagai notifikasi baru
+                                    secLastCountRef.current = newData.length;
+                                } else if (isBackground) {
+                                    // Hitung selisih log baru vs terakhir diketahui (pakai ref, selalu up-to-date)
+                                    const diff = newData.length - secLastCountRef.current;
+                                    if (diff > 0) setSecNewCount(prev => prev + diff);
+                                    secLastCountRef.current = newData.length;
                                 } else {
+                                    // Admin sedang membuka tab Perisai langsung -> reset badge
                                     setSecNewCount(0);
+                                    secLastCountRef.current = newData.length;
                                 }
-                                setSecLastCount(newData.length);
                             }
                         });
                     postApi({ action: 'getBlacklist', token: tkn })
                         .then(r => { if (r.success) setBlacklistData(r.data || []); });
                 };
 
-                // Load pertama kali
                 if (tab === 'perisai') {
+                    // Load pertama kali karena admin sedang di tab Perisai
                     setSecLoadingLog(true);
                     fetchPerisai(false);
                     setSecLoadingLog(false);
+                } else if (secLastCountRef.current === null) {
+                    // Inisialisasi baseline diam-diam (tanpa memunculkan badge) kalau belum pernah di-set
+                    fetchPerisai(false);
                 }
 
                 // Auto-refresh tiap 30 detik (background)
@@ -5218,13 +5225,6 @@ const submitArchiveChildren = async () => {
                                                 className={`flex items-center justify-center w-[60px] h-[42px] rounded-[18px] active:scale-95 transition-all relative outline-none ${isActive ? 'bg-[#E0E5EC] shadow-[inset_4px_4px_8px_rgb(163,177,198,0.6),inset_-4px_-4px_8px_rgba(255,255,255,0.8)]' : 'bg-[#E0E5EC] shadow-[4px_4px_8px_rgb(163,177,198,0.6),-4px_-4px_8px_rgba(255,255,255,0.8)]'}`}
                                             >
                                                 <Icon name={item.icon} size={24} className={isActive ? 'text-red-600' : 'text-red-500'} />
-                                                
-                                                {/* Lencana Notifikasi (Dibiarkan tetap sama sesuai logika Anda) */}
-                                                {role === 'admin' && secNewCount > 0 && (
-                                                    <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] bg-yellow-400 text-slate-900 text-[9px] font-black rounded-full flex items-center justify-center px-1 shadow animate-pulse">
-                                                        {secNewCount > 99 ? '99+' : secNewCount}
-                                                    </span>
-                                                )}
                                             </button>
                                         </div>
                                         <span className={`text-[10px] font-bold mt-auto mb-6 transition-colors ${isActive ? 'text-red-600' : 'text-slate-500'}`}>{item.label}</span>

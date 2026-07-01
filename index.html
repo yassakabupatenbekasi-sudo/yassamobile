@@ -2514,6 +2514,56 @@ const submitArchiveChildren = async () => {
                                     )}
                                 </div>
 
+                                {/* ============================================================ */}
+                                {/* REKAPITULASI 3 ZONA BESAR (JABODETABEK, SURABAYA RAYA, TASIK) */}
+                                {/* ============================================================ */}
+                                {(() => {
+                                    // Daftar kota/kabupaten di setiap zona (Termasuk antisipasi salah ketik Ganda/Tunggal huruf G pada Tangerang)
+                                    const groups = [
+                                        { id: 'jabodetabek', nama: 'Jabodetabek', kk: 0, yatim: 0, icon: 'map', color: 'text-emerald-600', cities: ['BOGOR', 'JAKARTA SELATAN', 'TANGGERANG SELATAN', 'TANGERANG SELATAN', 'JAKARTA TIMUR', 'JAKARTA BARAT', 'TANGGERANG KOTA', 'TANGERANG KOTA', 'KOTA BEKASI', 'TANGGERANG KABUPATEN', 'TANGERANG KABUPATEN', 'JAKARTA PUSAT', 'KABUPATEN BEKASI', 'DEPOK', 'JAKARTA UTARA'] },
+                                        { id: 'surabaya', nama: 'Surabaya Raya', kk: 0, yatim: 0, icon: 'map', color: 'text-blue-600', cities: ['GRESIK', 'SIDOARJO', 'SURABAYA'] },
+                                        { id: 'tasikmalaya', nama: 'Tasikmalaya', kk: 0, yatim: 0, icon: 'map', color: 'text-rose-600', cities: ['TASIKMALAYA'] }
+                                    ];
+
+                                    // Looping data wilayah, dan masukkan jumlahnya ke zona yang sesuai
+                                    regionalData.forEach(d => {
+                                        const w = d.wilayah.toUpperCase();
+                                        const targetGroup = groups.find(g => g.cities.includes(w));
+                                        if (targetGroup) {
+                                            targetGroup.kk += d.kk;
+                                            targetGroup.yatim += (d.yt + d.yp); // Gabungan Yatim dan Yatim Piatu
+                                        }
+                                    });
+
+                                    return (
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 mt-6">
+                                            {groups.map((g, idx) => (
+                                                <div key={idx} className="bg-[#E0E5EC] border-none p-5 rounded-[2rem] shadow-[9px_9px_16px_rgb(163,177,198,0.6),-9px_-9px_16px_rgba(255,255,255,0.5)] flex flex-col justify-between hover:scale-[1.02] transition-transform">
+                                                    <div className="flex items-center gap-3 mb-5">
+                                                        <div className={`w-11 h-11 bg-[#E0E5EC] rounded-2xl flex items-center justify-center shadow-[inset_3px_3px_6px_rgb(163,177,198,0.6),inset_-3px_-3px_6px_rgba(255,255,255,0.8)] ${g.color}`}>
+                                                            <Icon name={g.icon} size={20} />
+                                                        </div>
+                                                        <div>
+                                                            <h4 className="font-black text-slate-700 uppercase tracking-widest text-[11px] sm:text-xs leading-tight">{g.nama}</h4>
+                                                            <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Ringkasan Zona</p>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex gap-3">
+                                                        <div className="flex-1 bg-[#E0E5EC] p-3 rounded-2xl shadow-[inset_3px_3px_6px_rgb(163,177,198,0.6),inset_-3px_-3px_6px_rgba(255,255,255,0.8)] text-center flex flex-col justify-center">
+                                                            <p className="text-xl font-black text-slate-700 leading-none">{g.kk}</p>
+                                                            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1.5">Total KK</p>
+                                                        </div>
+                                                        <div className="flex-1 bg-[#E0E5EC] p-3 rounded-2xl shadow-[inset_3px_3px_6px_rgb(163,177,198,0.6),inset_-3px_-3px_6px_rgba(255,255,255,0.8)] text-center flex flex-col justify-center">
+                                                            <p className={`text-xl font-black leading-none ${g.color}`}>{g.yatim}</p>
+                                                            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest mt-1.5">Total Yatim</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    );
+                                })()}
+
                                 {/* DIAGRAM GRAFIK YATIM TERTINGGI (3 DIMENSI) */}
                                 {(() => {
                                     // Membuat copy dari regionalData, lalu di-sort berdasarkan yt (yatim) terbesar ke terkecil

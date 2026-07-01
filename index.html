@@ -553,7 +553,8 @@ const normId = (id) => String(id || "").toUpperCase().replace(/[^A-Z0-9]/g, "").
                 shield: <><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/></>,
                 ban: <><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></>,
                 'check-circle': <><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></>,
-                activity: <><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></>
+                activity: <><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></>,
+                history: <><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></>
             };
             return (
                 <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -806,6 +807,11 @@ const submitArchiveChildren = async () => {
             const [logModalOpen, setLogModalOpen] = useState(false);
             const [activityLogs, setActivityLogs] = useState([]);
             const [loadingLogs, setLoadingLogs] = useState(false);
+
+            // STATE LOG PERUBAHAN DATA (Audit Trail Tambah/Ubah/Hapus)
+            const [editLogModalOpen, setEditLogModalOpen] = useState(false);
+            const [editLogs, setEditLogs] = useState([]);
+            const [loadingEditLogs, setLoadingEditLogs] = useState(false);
 
             // ============================================================
             // 🛡️ STATE TAB PERISAI (SECURITY DASHBOARD)
@@ -1305,6 +1311,27 @@ const submitArchiveChildren = async () => {
                     setTimeout(() => setMsg(""), 4000);
                 }
                 setLoadingLogs(false);
+            };
+
+            // ✅ LOG PERUBAHAN DATA (Audit Trail Tambah/Ubah/Hapus) — data by Admin
+            const fetchEditLogs = async () => {
+                setLoadingEditLogs(true);
+                try {
+                    const tkn = yassaStore.get('yassa-token') || '';
+                    const res = await postApi({ action: 'getEditLog', limit: 100, token: tkn });
+
+                    if (res && res.success && res.data) {
+                        // Backend sudah mengirim data terbaru di atas, tidak perlu reverse lagi
+                        setEditLogs(res.data);
+                    } else {
+                        setMsg(`⚠️ Server: ${res?.error || "Gagal memuat log perubahan data."}`);
+                        setTimeout(() => setMsg(""), 4000);
+                    }
+                } catch (e) {
+                    setMsg("⚠️ Koneksi error saat mengambil log perubahan data.");
+                    setTimeout(() => setMsg(""), 4000);
+                }
+                setLoadingEditLogs(false);
             };
             useEffect(() => { if (role) { refresh(); fetchBankDictionary(); } }, [role, refresh, fetchBankDictionary]);
 
@@ -4487,6 +4514,21 @@ const submitArchiveChildren = async () => {
                                                 <Icon name="chevron-right" size={16} className="text-slate-400 shrink-0" />
                                             </button>
                                         )}
+
+                                        {role === 'admin' && (
+                                            <button onClick={() => { setEditLogModalOpen(true); fetchEditLogs(); }} className="w-full flex items-center justify-between px-6 py-4 hover:bg-slate-300/20 active:bg-slate-300/40 transition-all outline-none">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 bg-[#E0E5EC] rounded-2xl flex items-center justify-center shadow-[inset_2px_2px_4px_rgb(163,177,198,0.5),inset_-2px_-2px_4px_rgba(255,255,255,0.6)] shrink-0">
+                                                        <Icon name="history" size={18} className="text-amber-600" />
+                                                    </div>
+                                                    <div className="text-left">
+                                                        <p className="text-[11px] font-black text-slate-700 uppercase tracking-wider">Log Perubahan Data</p>
+                                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Audit Tambah/Ubah/Hapus data</p>
+                                                    </div>
+                                                </div>
+                                                <Icon name="chevron-right" size={16} className="text-slate-400 shrink-0" />
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
 
@@ -5208,6 +5250,66 @@ const submitArchiveChildren = async () => {
                                         </div>
                                     ) : (
                                         <div className="flex items-center justify-center h-full text-slate-400 text-[10px] font-black uppercase">Tidak ada data log aktivitas.</div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* MODAL LOG PERUBAHAN DATA (AUDIT TRAIL TAMBAH/UBAH/HAPUS) */}
+                    {editLogModalOpen && (
+                        <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[100] p-4 flex items-center justify-center fade-in no-print">
+                            <div className="bg-white w-full max-w-lg rounded-[2rem] shadow-2xl overflow-hidden flex flex-col h-[80vh]">
+                                <div className="p-5 border-b bg-slate-50 flex justify-between items-center shrink-0">
+                                    <div>
+                                        <h3 className="font-black text-slate-800 uppercase text-sm tracking-wider">Log Perubahan Data</h3>
+                                        <p className="text-[9px] font-bold text-slate-500 mt-1 uppercase tracking-widest">Audit Tambah / Ubah / Hapus Data</p>
+                                    </div>
+                                    <button onClick={() => setEditLogModalOpen(false)} className="p-2 bg-white rounded-full shadow-sm active:scale-95 border border-slate-200"><Icon name="x" size={16}/></button>
+                                </div>
+                                <div className="p-0 overflow-y-auto flex-1 bg-slate-100">
+                                    {loadingEditLogs ? (
+                                        <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                                            <div className="w-8 h-8 border-4 border-slate-300 border-t-slate-800 rounded-full animate-spin mb-3"></div>
+                                            <span className="text-[10px] font-black tracking-widest uppercase">Memuat Log...</span>
+                                        </div>
+                                    ) : editLogs.length > 0 ? (
+                                        <div className="divide-y divide-slate-200">
+                                            {editLogs.map((log, i) => {
+                                                const aksi = (getVal(log, 'Aksi') || '-').toString();
+                                                const aksiUp = aksi.toUpperCase();
+                                                const badgeStyle = aksiUp === 'TAMBAH'
+                                                    ? { emoji: '🟢', cls: 'bg-emerald-100 text-emerald-700' }
+                                                    : aksiUp === 'HAPUS'
+                                                    ? { emoji: '🔴', cls: 'bg-rose-100 text-rose-700' }
+                                                    : { emoji: '🔵', cls: 'bg-blue-100 text-blue-700' }; // default: Ubah
+                                                return (
+                                                    <div key={i} className="bg-white p-4 hover:bg-slate-50 transition-colors">
+                                                        <div className="flex justify-between items-start mb-2">
+                                                            <span className={`text-[9px] font-black px-2 py-0.5 rounded tracking-widest uppercase ${badgeStyle.cls}`}>
+                                                                {badgeStyle.emoji} {aksi}
+                                                            </span>
+                                                            <span className="text-[9px] font-bold text-slate-400">{getVal(log, 'Waktu') || '-'}</span>
+                                                        </div>
+                                                        <p className="text-[11px] font-black text-slate-800 uppercase">
+                                                            {getVal(log, 'Nama (Atas Nama)') || '-'}
+                                                            <span className="text-slate-400 font-normal"> ({getVal(log, 'Kategori Data') || '-'})</span>
+                                                        </p>
+                                                        <p className="text-[10px] text-slate-600 font-bold mt-1">
+                                                            Kolom: <span className="uppercase">{getVal(log, 'Kolom') || '-'}</span>
+                                                        </p>
+                                                        <p className="text-[10px] text-slate-500 font-bold mt-1 break-words">
+                                                            <span className="line-through text-rose-400">{getVal(log, 'Nilai Lama') || '-'}</span>
+                                                            {' '}→{' '}
+                                                            <span className="text-emerald-600">{getVal(log, 'Nilai Baru') || '-'}</span>
+                                                        </p>
+                                                        <p className="text-[8px] text-slate-400 font-bold uppercase mt-2">Admin: {getVal(log, 'Admin') || '-'}</p>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center justify-center h-full text-slate-400 text-[10px] font-black uppercase">Tidak ada data log perubahan.</div>
                                     )}
                                 </div>
                             </div>

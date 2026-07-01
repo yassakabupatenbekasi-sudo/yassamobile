@@ -4532,18 +4532,6 @@ const submitArchiveChildren = async () => {
                                     </div>
                                 </div>
 
-                               {/* ============================================================ */}
-                                {/* TOMBOL BUKA PERISAI YASSA (Hanya Admin)                      */}
-                                {/* ============================================================ */}
-                                {role === 'admin' && (
-                                    <button
-                                        onClick={() => setPerisaiDrawerOpen(true)}
-                                        className="w-full bg-[#E0E5EC] border-none text-slate-600 py-4 mb-4 rounded-[2rem] font-black text-[10px] uppercase tracking-[3px] shadow-[6px_6px_12px_rgb(163,177,198,0.6),-6px_-6px_12px_rgba(255,255,255,0.8)] hover:text-slate-700 active:scale-[0.98] active:shadow-[inset_4px_4px_8px_rgb(163,177,198,0.6),inset_-4px_-4px_8px_rgba(255,255,255,0.8)] outline-none transition-all duration-200 flex items-center justify-center gap-2.5"
-                                    >
-                                        <Icon name="shield" size={16} className="text-red-500" /> Sistem Perisai YASSA
-                                    </button>
-                                )}
-
                                 {/* ============================================================ */}
                                 {/* 3. TOMBOL LOGOUT (Gaya Neumorphism Pop-Out Efek Tekan)          */}
                                 {/* ============================================================ */}

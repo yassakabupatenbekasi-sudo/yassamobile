@@ -2531,7 +2531,7 @@ const submitArchiveChildren = async () => {
                                         const targetGroup = groups.find(g => g.cities.includes(w));
                                         if (targetGroup) {
                                             targetGroup.kk += d.kk;
-                                            targetGroup.yatim += (d.yt + d.yp); // Gabungan Yatim dan Yatim Piatu
+                                            targetGroup.yatim += d.yt; // Hanya menghitung Yatim murni agar cocok dengan tabel bawah
                                         }
                                     });
 

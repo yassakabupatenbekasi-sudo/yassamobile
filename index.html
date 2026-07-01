@@ -4183,6 +4183,20 @@ const submitArchiveChildren = async () => {
                                                 🌐 {userWilayah === 'ALL' ? 'Semua Wilayah' : (userWilayah || '-')}
                                             </span>
                                         </div>
+
+                                        {/* STATISTIK DATA BARU & DATA KELUAR */}
+                                        <div className="grid grid-cols-2 gap-3 mt-4">
+                                            <div className="bg-[#E0E5EC] p-3 rounded-2xl shadow-[4px_4px_8px_rgb(163,177,198,0.6),-4px_-4px_8px_rgba(255,255,255,0.8)] flex flex-col items-center justify-center text-center">
+                                                <Icon name="users" size={14} className="text-emerald-500 mb-1" />
+                                                <p className="text-lg font-black text-slate-700 leading-none mb-1">{dashboardStats.totalMasuk}</p>
+                                                <p className="text-[7px] font-bold text-slate-500 uppercase tracking-widest leading-tight">Data Baru</p>
+                                            </div>
+                                            <div className="bg-[#E0E5EC] p-3 rounded-2xl shadow-[4px_4px_8px_rgb(163,177,198,0.6),-4px_-4px_8px_rgba(255,255,255,0.8)] flex flex-col items-center justify-center text-center">
+                                                <Icon name="database" size={14} className="text-rose-500 mb-1" />
+                                                <p className="text-lg font-black text-slate-700 leading-none mb-1">{dashboardStats.totalKeluar}</p>
+                                                <p className="text-[7px] font-bold text-slate-500 uppercase tracking-widest leading-tight">Data Keluar</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -4711,21 +4725,11 @@ const submitArchiveChildren = async () => {
           <div className="px-7 pb-8 space-y-3">
             
             {/* STATISTIK KONTROL (Dipindahkan dari Tab Perisai) */}
-            <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="mb-4">
                 <div className="bg-[#E0E5EC] p-3 rounded-2xl shadow-[4px_4px_8px_rgb(163,177,198,0.6),-4px_-4px_8px_rgba(255,255,255,0.8)] flex flex-col items-center justify-center text-center">
                     <Icon name="edit" size={14} className="text-blue-500 mb-1" />
                     <p className="text-lg font-black text-slate-700 leading-none mb-1">0</p>
                     <p className="text-[7px] font-bold text-slate-500 uppercase tracking-widest leading-tight">Ubah Rekening</p>
-                </div>
-                <div className="bg-[#E0E5EC] p-3 rounded-2xl shadow-[4px_4px_8px_rgb(163,177,198,0.6),-4px_-4px_8px_rgba(255,255,255,0.8)] flex flex-col items-center justify-center text-center">
-                    <Icon name="users" size={14} className="text-emerald-500 mb-1" />
-                    <p className="text-lg font-black text-slate-700 leading-none mb-1">{dashboardStats.totalMasuk}</p>
-                    <p className="text-[7px] font-bold text-slate-500 uppercase tracking-widest leading-tight">Data Baru</p>
-                </div>
-                <div className="bg-[#E0E5EC] p-3 rounded-2xl shadow-[4px_4px_8px_rgb(163,177,198,0.6),-4px_-4px_8px_rgba(255,255,255,0.8)] flex flex-col items-center justify-center text-center">
-                    <Icon name="database" size={14} className="text-rose-500 mb-1" />
-                    <p className="text-lg font-black text-slate-700 leading-none mb-1">{dashboardStats.totalKeluar}</p>
-                    <p className="text-[7px] font-bold text-slate-500 uppercase tracking-widest leading-tight">Data Keluar</p>
                 </div>
             </div>
 

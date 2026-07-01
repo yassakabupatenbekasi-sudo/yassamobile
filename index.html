@@ -587,6 +587,7 @@ const normId = (id) => String(id || "").toUpperCase().replace(/[^A-Z0-9]/g, "").
             const [perisaiDrawerOpen, setPerisaiDrawerOpen] = useState(false); // ← tambahkan ini
             const [updateDataOpen, setUpdateDataOpen] = useState(false);
             const [updateSearchQuery, setUpdateSearchQuery] = useState('');
+            const [updateSearchWilayah, setUpdateSearchWilayah] = useState('');
 
             // STATE MODE MALAM (DARK MODE)
             const [darkMode, setDarkMode] = useState(() => {
@@ -1702,20 +1703,27 @@ const submitArchiveChildren = async () => {
             }, [data, regionAnalysisFilter, familyLookupMap]);
 
             const updateSearchResults = useMemo(() => {
-                if (!updateSearchQuery || updateSearchQuery.trim().length < 2) return [];
+                const hasQuery = updateSearchQuery && updateSearchQuery.trim().length >= 2;
+                const hasWilayah = !!updateSearchWilayah;
+                if (!hasQuery && !hasWilayah) return [];
                 let result = data.keluarga;
                 if (role === 'korwil') {
                     result = result.filter(f => allowedRegions.includes((getVal(f, 'WILAYAH') || '').toUpperCase()));
                 }
-                const q = updateSearchQuery.toLowerCase();
-                result = result.filter(f => {
-                    const matchKeluarga = (getVal(f, 'NAMA ALM') || '').toLowerCase().includes(q) || (getVal(f, 'NAMA IBU') || '').toLowerCase().includes(q);
-                    const anakKeluarga = anakByKeluargaMap[norm(getVal(f, 'ID_Keluarga'))] || [];
-                    const matchAnak = anakKeluarga.some(c => (getVal(c, 'NAMA ANAK') || '').toLowerCase().includes(q));
-                    return matchKeluarga || matchAnak;
-                });
-                return result.slice(0, 8);
-            }, [data.keluarga, data.anak, updateSearchQuery, role, allowedRegions]);
+                if (hasWilayah) {
+                    result = result.filter(f => (getVal(f, 'WILAYAH') || '').toUpperCase() === updateSearchWilayah.toUpperCase());
+                }
+                if (hasQuery) {
+                    const q = updateSearchQuery.toLowerCase();
+                    result = result.filter(f => {
+                        const matchKeluarga = (getVal(f, 'NAMA ALM') || '').toLowerCase().includes(q) || (getVal(f, 'NAMA IBU') || '').toLowerCase().includes(q);
+                        const anakKeluarga = anakByKeluargaMap[norm(getVal(f, 'ID_Keluarga'))] || [];
+                        const matchAnak = anakKeluarga.some(c => (getVal(c, 'NAMA ANAK') || '').toLowerCase().includes(q));
+                        return matchKeluarga || matchAnak;
+                    });
+                }
+                return result.slice(0, hasQuery ? 8 : 15);
+            }, [data.keluarga, data.anak, updateSearchQuery, updateSearchWilayah, role, allowedRegions]);
 
             const filteredKeluarga = useMemo(() => {
                 let result = data.keluarga;
@@ -2783,7 +2791,7 @@ const submitArchiveChildren = async () => {
                                 {role === 'admin' && (
                                     <div className="w-full bg-[#E0E5EC] border-none rounded-[2rem] shadow-[9px_9px_16px_rgb(163,177,198,0.6),-9px_-9px_16px_rgba(255,255,255,0.5)] transition-all overflow-hidden">
                                         <button
-                                            onClick={() => setUpdateDataOpen(!updateDataOpen)}
+                                            onClick={() => { const next = !updateDataOpen; setUpdateDataOpen(next); if (!next) { setUpdateSearchQuery(''); setUpdateSearchWilayah(''); } }}
                                             className="w-full p-6 flex items-center gap-5 text-left active:scale-[0.98] transition-all"
                                         >
                                             <div className="w-14 h-14 shrink-0 rounded-2xl bg-[#E0E5EC] flex items-center justify-center shadow-[4px_4px_8px_rgb(163,177,198,0.6),-4px_-4px_8px_rgba(255,255,255,0.8)]">
@@ -2809,11 +2817,27 @@ const submitArchiveChildren = async () => {
                                                     />
                                                 </div>
 
-                                                {updateSearchQuery.trim().length > 0 && updateSearchQuery.trim().length < 2 && (
+                                                <div className="bg-[#E0E5EC] rounded-2xl shadow-[inset_4px_4px_8px_rgb(163,177,198,0.6),inset_-4px_-4px_8px_rgba(255,255,255,0.8)] flex items-center gap-2 px-4 py-3 mb-3">
+                                                    <Icon name="map" size={16} className="text-slate-400 shrink-0" />
+                                                    <select
+                                                        value={updateSearchWilayah}
+                                                        onChange={e => setUpdateSearchWilayah(e.target.value)}
+                                                        className="flex-1 bg-transparent outline-none text-[11px] font-bold text-slate-700 uppercase"
+                                                    >
+                                                        <option value="">SEMUA WILAYAH</option>
+                                                        {KELUARGA_FIELDS.find(f => f.key === 'WILAYAH').options.map(o => <option key={o} value={o}>{o}</option>)}
+                                                    </select>
+                                                </div>
+
+                                                {!updateSearchWilayah && updateSearchQuery.trim().length > 0 && updateSearchQuery.trim().length < 2 && (
                                                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest text-center py-3">Ketik minimal 2 huruf...</p>
                                                 )}
 
-                                                {updateSearchQuery.trim().length >= 2 && updateSearchResults.length === 0 && (
+                                                {!updateSearchWilayah && updateSearchQuery.trim().length === 0 && (
+                                                    <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest text-center py-3">Ketik nama atau pilih wilayah untuk mencari</p>
+                                                )}
+
+                                                {(updateSearchWilayah || updateSearchQuery.trim().length >= 2) && updateSearchResults.length === 0 && (
                                                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest text-center py-3">Data tidak ditemukan</p>
                                                 )}
 
@@ -2821,7 +2845,7 @@ const submitArchiveChildren = async () => {
                                                     {updateSearchResults.map((f, i) => (
                                                         <button
                                                             key={i}
-                                                            onClick={() => { openEditFamily(f); setUpdateDataOpen(false); setUpdateSearchQuery(''); }}
+                                                            onClick={() => { openEditFamily(f); setUpdateDataOpen(false); setUpdateSearchQuery(''); setUpdateSearchWilayah(''); }}
                                                             className="w-full bg-[#E0E5EC] rounded-2xl shadow-[4px_4px_8px_rgb(163,177,198,0.6),-4px_-4px_8px_rgba(255,255,255,0.8)] active:shadow-[inset_2px_2px_4px_rgb(163,177,198,0.6),inset_-2px_-2px_4px_rgba(255,255,255,0.8)] active:scale-[0.98] transition-all px-4 py-3 flex items-center justify-between gap-3 text-left"
                                                         >
                                                             <div className="min-w-0">
